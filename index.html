@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Download YouTube videos and audio in high quality — free, fast, and modern." />
+  <title>YouTube Downloader</title>
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+
+<!-- ─── Header ─────────────────────────────────────────────────── -->
+<header class="app-header">
+  <div class="app-logo">
+    <div class="logo-icon">📥</div>
+    <div class="logo-text">
+      <h1>YT Downloader</h1>
+      <span>Powered by yt-dlp</span>
+    </div>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+    <span class="toggle-icon" id="themeIcon">☀️</span>
+    <span id="themeLabel">Light</span>
+  </button>
+</header>
+
+<!-- ─── Main Card ───────────────────────────────────────────────── -->
+<main class="main-card" id="mainCard"
+      ondragover="handleDragOver(event)"
+      ondragleave="handleDragLeave(event)"
+      ondrop="handleDrop(event)">
+
+  <!-- URL Section -->
+  <div class="url-section">
+    <div class="section-label">🔗 YouTube URL</div>
+    <div class="url-input-wrap" id="urlInputWrap">
+      <input
+        type="text"
+        id="urlInput"
+        placeholder="Paste YouTube URL or drag it here..."
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="YouTube URL"
+        oninput="onUrlInput()"
+        onkeydown="if(event.key==='Enter') analyzeUrl()"
+      />
+      <button class="btn-analyze" id="analyzeBtn" onclick="analyzeUrl()">
+        Download
+      </button>
+    </div>
+    <div class="url-hint">
+      <span>💡</span>
+      Supports youtube.com, youtu.be, Shorts, and Playlists
+    </div>
+  </div>
+
+  <!-- Error Banner -->
+  <div class="error-banner" id="errorBanner" role="alert">
+    <span class="err-icon">⚠️</span>
+    <span id="errorMsg"></span>
+  </div>
+
+  <!-- Folder Section -->
+  <div class="url-section" style="margin-top: 16px;">
+    <div class="section-label">📂 Save To</div>
+    <div class="url-input-wrap">
+      <input
+        type="text"
+        id="folderInput"
+        placeholder="Leave blank for default Downloads folder..."
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="Output folder path"
+      />
+    </div>
+    <div class="url-hint">
+      <span>💡</span>
+      Absolute path (e.g. C:\Videos or /Users/name/Movies)
+    </div>
+  </div>
+
+  <!-- Divider -->
+  <div class="divider" id="divider1" style="display:none"></div>
+
+  <!-- Video Info Section -->
+  <div id="videoInfoSection">
+    <div class="section-label">🎬 Video Info</div>
+    <div class="video-card" id="videoCard">
+      <div class="video-thumb-wrap">
+        <img id="videoThumb" src="" alt="Thumbnail" />
+      </div>
+      <div class="video-meta">
+        <div class="video-title" id="videoTitle"></div>
+        <div class="video-details">
+          <div class="detail-chip" id="chipDuration">⏱ --:--</div>
+          <div class="detail-chip" id="chipViews">👁 ---</div>
+          <div class="detail-chip" id="chipUploader">👤 ---</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Divider -->
+  <div class="divider" id="divider2" style="display:none"></div>
+
+  <!-- Download Options Section -->
+  <div id="downloadSection">
+    <div class="section-label">⚙️ Download Options</div>
+
+    <!-- Mode Tabs -->
+    <div class="mode-tabs" role="tablist">
+      <button class="mode-tab active" id="tabVideo" role="tab"
+              onclick="setMode('video')" aria-selected="true">
+        🎬 Video
+      </button>
+      <button class="mode-tab" id="tabAudio" role="tab"
+              onclick="setMode('audio')" aria-selected="false">
+        🎵 Audio (MP3)
+      </button>
+    </div>
+
+    <!-- Selects -->
+    <div class="options-row">
+      <!-- Quality (video) -->
+      <div class="option-group" id="videoQualityGroup">
+        <div class="section-label">Quality</div>
+        <select class="option-select" id="qualitySelect" aria-label="Video quality">
+          <option value="best">Best Available</option>
+          <option value="2160">4K (2160p)</option>
+          <option value="1080" selected>1080p</option>
+          <option value="720">720p</option>
+          <option value="480">480p</option>
+          <option value="360">360p</option>
+        </select>
+      </div>
+
+      <!-- Bitrate (audio) -->
+      <div class="option-group" id="audioBitrateGroup" style="display:none">
+        <div class="section-label">Bitrate</div>
+        <select class="option-select" id="bitrateSelect" aria-label="Audio bitrate">
+          <option value="128k">128 kbps</option>
+          <option value="192k" selected>192 kbps</option>
+          <option value="320k">320 kbps (HQ)</option>
+        </select>
+      </div>
+
+      <!-- Format info -->
+      <div class="option-group">
+        <div class="section-label">Format</div>
+        <select class="option-select" id="formatDisplay" aria-label="Output format" disabled>
+          <option id="formatOption">MP4 (H.264)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- FFmpeg warning -->
+    <div class="ffmpeg-warning" id="ffmpegWarn">
+      ⚠️ <span>ffmpeg not found — MP3 conversion unavailable. <a href="https://ffmpeg.org/download.html" target="_blank">Install ffmpeg</a> to enable audio downloads.</span>
+    </div>
+
+    <!-- Download Button -->
+    <button class="btn-download" id="downloadBtn" onclick="startDownload()">
+      <span id="downloadBtnIcon">⬇️</span>
+      <span id="downloadBtnText">Download Video</span>
+    </button>
+  </div>
+
+  <!-- Divider -->
+  <div class="divider" id="divider3" style="display:none"></div>
+
+  <!-- Progress Section -->
+  <div id="progressSection">
+    <div class="section-label">📊 Progress</div>
+    <div class="progress-header">
+      <span class="progress-label" id="progressLabel">Downloading...</span>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar" style="width:0%"></div>
+    </div>
+    <div class="progress-meta">
+      <span id="progressSpeed"></span>
+      <span id="progressEta"></span>
+    </div>
+    <button class="btn-cancel" id="cancelBtn" onclick="cancelDownload()">
+      ✕ Cancel
+    </button>
+  </div>
+
+  <!-- Divider -->
+  <div class="divider" id="divider4" style="display:none"></div>
+
+  <!-- Success Section -->
+  <div id="successSection">
+    <div class="success-card">
+      <div class="success-title">
+        ✅ Download Complete!
+      </div>
+      <div class="success-path" id="successPath"></div>
+      <div class="success-actions">
+        <button class="btn-outline" id="openFolderBtn" onclick="openFolder()">
+          📂 Open Folder
+        </button>
+        <button class="btn-secondary" onclick="resetApp()">
+          🔄 Download Another
+        </button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ─── Toast Container ─────────────────────────────────────────── -->
+<div id="toastContainer" aria-live="polite"></div>
+
+<script src="/assets/app.js"></script>
+</body>
+</html>
